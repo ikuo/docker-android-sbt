@@ -21,7 +21,7 @@ RUN wget http://dl.bintray.com/sbt/debian/sbt-0.13.5.deb && \
 RUN apt-get update && apt-get install sbt
 
 # Make user 'ubuntu'
-RUN useradd ubuntu -m -g sudo -s /bin/zsh && passwd -d ubuntu
+RUN useradd ubuntu -m -g sudo && passwd -d ubuntu
 RUN cd /home/ubuntu && sudo -H -u ubuntu sbt exit
 
 # Install dependencies of Android SDK: https://hirooka.pro/?p=5905
@@ -70,14 +70,8 @@ RUN rm android-sdk_r22.3-linux.tgz && rm android-ndk-r9c-linux-x86_64.tar.bz2 &&
 # }}}
 
 # ---- Setup ssh login ----
-ADD ssh $HOME/.ssh
-RUN sudo chown -R ubuntu /home/ubuntu/.ssh/
-RUN chmod 600 /home/ubuntu/.ssh/*
-
-# Enter shell session with file share
-USER ubuntu
-ENTRYPOINT \
-  export HOME=/home/ubuntu && \
-  sudo /etc/init.d/ssh start &&
-
-CMD /bin/bash
+#ENTRYPOINT sudo /etc/init.d/ssh start && /bin/bash
+ADD startup.sh /tmp/startup.sh
+RUN sudo chmod a+x /tmp/startup.sh
+ENTRYPOINT ["/tmp/startup.sh"]
+CMD []

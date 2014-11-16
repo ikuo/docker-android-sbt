@@ -18,13 +18,14 @@ RUN rpm -i sbt-0.13.6.rpm
 RUN useradd centos -m -g wheel
 RUN cd /home/centos
 
+# Startup script
+ADD startup.sh /tmp/startup.sh
+RUN chown centos /tmp/startup.sh && chmod a+x /tmp/startup.sh
+
 # ---- Run as centos user ----
 USER centos
 WORKDIR /home/centos
 ENV HOME /home/centos
 RUN mkdir $HOME/opt/
 
-# ---- Setup ssh login ----
-ADD startup.sh /tmp/startup.sh
-RUN sudo chmod a+x /tmp/startup.sh
 ENTRYPOINT ["/tmp/startup.sh"]

@@ -1,74 +1,28 @@
-FROM ubuntu:14.04
+FROM wasabeef/android:latest
 MAINTAINER Ikuo Matsumura <makiczar@gmail.com>
 
-ENV DEBIAN_FRONTEND noninteractive
-RUN echo "deb http://ja.archive.ubuntu.com/ubuntu trusty main universe" > /etc/apt/sources.list
-RUN apt-get update && apt-get upgrade -y
-RUN apt-get install wget openssh-server -y --no-install-recommends
-
-# Install Java6
-RUN apt-get install software-properties-common -y --no-install-recommends # for add-apt-repository
-RUN add-apt-repository ppa:webupd8team/java && apt-get update
-## **** Make sure you agree the Oracle License ***
-RUN \
-  echo debconf shared/accepted-oracle-license-v1-1 select true | sudo debconf-set-selections &&\
-  echo debconf shared/accepted-oracle-license-v1-1 seen true | sudo debconf-set-selections
-RUN apt-get install oracle-java6-installer -y --no-install-recommends
-
-# Install sbt
-RUN wget http://dl.bintray.com/sbt/debian/sbt-0.13.5.deb && \
-  dpkg -i sbt-0.13.5.deb && \
-  rm sbt-0.13.5.deb
-RUN apt-get update && apt-get install sbt
-
-# Make user 'ubuntu'
-RUN useradd ubuntu -m -g sudo && passwd -d ubuntu
-RUN cd /home/ubuntu && sudo -H -u ubuntu sbt exit
-
-# Install 32bit libs to workaround Android SDK: https://hirooka.pro/?p=5905
-#   e.g. http://stackoverflow.com/questions/18041769/error-cannot-run-aapt
-# Downgrading libc6 2.19-0ubuntu6{.1 -> } to workaround unmet dependencies on dpkg.
-RUN apt-get install build-essential libc-dev libc6=2.19-0ubuntu6 libc6-dev g++ -y --force-yes
-RUN apt-get install lib32z1 lib32ncurses5 lib32bz2-1.0 -y
-RUN apt-get install g++-multilib -y
-
-# Configure sshd
-RUN sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config
-RUN echo 'UseDns no' >> /etc/ssh/sshd_config
+RUN yum -y install initscripts MAKEDEV
+RUN yum check && yum -y update
+RUN yum -y install openssh-server
+RUN sed -ri 's/^#PermitRootLogin yes/PermitRootLogin yes/' /etc/ssh/sshd_config
+RUN sed -ri 's/^UsePAM yes/UsePAM no/' /etc/ssh/sshd_config
+RUN /etc/init.d/sshd start
 EXPOSE 22
 
-# ---- Run as ubuntu user ----
-USER ubuntu
-WORKDIR /home/ubuntu
-ENV HOME /home/ubuntu
+# Install sbt
+RUN wget https://dl.bintray.com/sbt/rpm/sbt-0.13.6.rpm
+RUN yum install -y java-devel
+RUN rpm -i sbt-0.13.6.rpm
+
+# Make user 'centos'
+RUN useradd centos -m -g wheel
+RUN cd /home/centos
+
+# ---- Run as centos user ----
+USER centos
+WORKDIR /home/centos
+ENV HOME /home/centos
 RUN mkdir $HOME/opt/
-
-# Install Android SDK, NDK, Ant {{{
-#   https://registry.hub.docker.com/u/ahazem/android/dockerfile/
-RUN wget http://archive.apache.org/dist/ant/binaries/apache-ant-1.8.4-bin.tar.gz && \
-  tar -xvzf apache-ant-1.8.4-bin.tar.gz && \
-  mv apache-ant-1.8.4 $HOME/opt/apache-ant && \
-  rm apache-ant-1.8.4-bin.tar.gz
-RUN wget http://dl.google.com/android/ndk/android-ndk-r9c-linux-x86_64.tar.bz2 && \
-  tar -xvjf android-ndk-r9c-linux-x86_64.tar.bz2 && \
-  mv android-ndk-r9c $HOME/opt/android-ndk && \
-  rm android-ndk-r9c-linux-x86_64.tar.bz2
-RUN wget http://dl.google.com/android/android-sdk_r22.3-linux.tgz && \
-  tar -xvzf android-sdk_r22.3-linux.tgz && \
-  mv android-sdk-linux $HOME/opt/android-sdk && \
-  rm android-sdk_r22.3-linux.tgz
-
-### Add Android tools and platform tools to PATH
-ENV ANDROID_HOME $HOME/opt/android-sdk
-ENV PATH $PATH:$ANDROID_HOME/tools
-ENV PATH $PATH:$ANDROID_HOME/platform-tools
-ENV ANT_HOME $HOME/opt/apache-ant
-ENV PATH $PATH:$ANT_HOME/bin
-ENV JAVA_HOME /usr/lib/jvm/java-6-oracle
-
-### Install latest android (19 / 4.4.2) tools and system image.
-RUN echo "y" | android update sdk --no-ui --filter platform-tools,android-19,build-tools-19.1.0,sysimg-19
-# }}}
 
 # ---- Setup ssh login ----
 ADD startup.sh /tmp/startup.sh

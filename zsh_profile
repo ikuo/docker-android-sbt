@@ -1,0 +1,6 @@
+ export ANDROID_HOME=$HOME/opt/android-sdk
+ export PATH=$PATH:$ANDROID_HOME/tools
+ export PATH=$PATH:$ANDROID_HOME/platform-tools
+ export ANT_HOME=$HOME/opt/apache-ant
+ export PATH=$PATH:$ANT_HOME/bin
+ export JAVA_HOME=/usr/lib/jvm/java-6-oracle

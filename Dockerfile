@@ -23,7 +23,6 @@ RUN apt-get update && apt-get install sbt
 
 # Make user 'ubuntu'
 RUN useradd ubuntu -m -g sudo && passwd -d ubuntu
-RUN cd /home/ubuntu && sudo -H -u ubuntu sbt exit
 
 # Install 32bit libs to workaround Android SDK: https://hirooka.pro/?p=5905
 #   e.g. http://stackoverflow.com/questions/18041769/error-cannot-run-aapt
@@ -69,6 +68,9 @@ ENV JAVA_HOME /usr/lib/jvm/java-6-oracle
 ### Install latest android (19 / 4.4.2) tools and system image.
 RUN echo "y" | android update sdk --no-ui --filter platform-tools,android-19,build-tools-19.1.0,sysimg-19
 # }}}
+
+ADD zsh_profile $HOME/.zsh_profile
+RUN sudo chmod ubuntu $HOME/.zsh_profile
 
 # ---- Setup ssh login ----
 ADD startup.sh /tmp/startup.sh
